@@ -1,0 +1,52 @@
+const express = require('express');
+const cors = require('cors');
+const bridgeController = require('./controllers/bridgeController');
+const groupController = require('./controllers/groupController');
+const lightsController = require('./controllers/lightsController');
+const effectController = require('./controllers/effectController');
+const streamController = require('./controllers/streamController');
+
+const app = express();
+const PORT = 5000;
+
+const socket = {
+  active: false,
+  instance: null,
+};
+
+
+// Middleware
+app.use(cors());
+app.use(express.json());
+
+// Routes
+app.get('/api/test', bridgeController.test); // Ensure this is a function
+
+
+app.get('/api/bridges', bridgeController.getBridges); // Ensure this is a function
+app.get('/api/bridges/discover', bridgeController.discoverBridges); // Ensure this is a function
+
+app.post('/api/bridges/connect', bridgeController.connectToBridge); // Ensure this is a function
+
+app.get('/api/bridges/:id/groups', groupController.getGroups);
+app.get('/api/bridges/:id/groups/sync', groupController.syncGroups);
+
+app.get('/api/bridges/:id/lights', lightsController.getLights);
+app.get('/api/bridges/:id/lights/sync', lightsController.syncLights);
+
+app.get('/api/effects/:groupId/test', effectController.testLights);
+
+app.get('/api/stream/:groupId/activate', streamController.activate);
+
+
+  app.get('/api/stream/start', (req, res) => {
+    socket.active = !socket.active;
+    res.json({
+      active: socket.active
+    })
+  });
+
+  // Start the server
+  app.listen(PORT, () => {
+    console.log(`Server is running at http://localhost:${PORT}`);
+  });

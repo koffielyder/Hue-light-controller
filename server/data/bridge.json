@@ -1,0 +1,21 @@
+{
+  "index": 3,
+  "data": [
+    {
+      "name": "Bridge Nico",
+      "ip": "192.168.178.228",
+      "apikey": "BOfRckcckjSlIrk8m5xwyv7digId0BuJE5wBfoG",
+      "clientkey": "B69BBE35C3D44B53CBAED333FECB79D3",
+      "app": "new-hue-node",
+      "id": 1
+    },
+    {
+      "name": "bridge pax",
+      "ip": "192.168.178.20",
+      "apikey": "u9xp2lOqzhhhvPdbDOzQY2G18ov4qMAf-Tar7FJC",
+      "clientkey": "A34A7148BDF99433339172ADD5F188F0",
+      "app": "hue light mixer",
+      "id": 2
+    }
+  ]
+}

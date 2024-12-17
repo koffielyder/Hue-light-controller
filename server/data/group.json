@@ -1,0 +1,64 @@
+{
+  "index": 8,
+  "data": [
+    {
+      "name": "Bed area",
+      "lightApiIds": [
+        "5efcd7df-014a-42cc-91c3-c5206ec73b95",
+        "e1938b2e-8bfa-4f55-b70c-2db9993e07be",
+        "e1807e8c-c049-4720-b188-722c6796b520",
+        "dabdf20f-74da-4329-afb6-1c8ea2a02625",
+        "f0c61bd8-2d87-4bbd-a044-311da144f770"
+      ],
+      "apiId": "357e072a-1d10-4e23-bf09-ec467445b518",
+      "type": "entertainment",
+      "idv1": "/groups/200",
+      "bridgeId": 1,
+      "id": 1
+    },
+    {
+      "name": "Woonkamerparty",
+      "lightApiIds": [
+        "10cefaca-da3f-49ce-b4fb-976d5e05acc0",
+        "e5d98952-e194-43f0-97ad-a43aae785830",
+        "88165a3d-3cd0-46c8-9b16-594ddbb741c4",
+        "587bc93d-ba49-4be3-8534-81a1cadfeba6",
+        "4f6b0c2a-c87a-42af-8d59-0b2597576ffa",
+        "c44bbf63-38ff-4f68-9ad7-1ec71d9885ea",
+        "0d05d47d-fd9b-4cc6-a7b0-1fa437fd4080",
+        "1e0a862b-55f8-4da1-a0cd-4a092441c4c2",
+        "cf4ea6db-d41e-423e-abc8-0a8f46c59aec"
+      ],
+      "apiId": "17c1fe26-a9f9-421f-a7c8-db725895feb7",
+      "idv1": "/groups/2",
+      "type": "entertainment",
+      "bridgeId": 2,
+      "id": 5
+    },
+    {
+      "name": "Woonkamer",
+      "lightApiIds": [
+        "c44bbf63-38ff-4f68-9ad7-1ec71d9885ea",
+        "1e0a862b-55f8-4da1-a0cd-4a092441c4c2",
+        "0d05d47d-fd9b-4cc6-a7b0-1fa437fd4080",
+        "cf4ea6db-d41e-423e-abc8-0a8f46c59aec"
+      ],
+      "apiId": "3dadf428-308b-4d53-8bf8-f4dc385bf24c",
+      "idv1": "/groups/5",
+      "type": "entertainment",
+      "bridgeId": 2,
+      "id": 6
+    },
+    {
+      "name": "Alleen TV",
+      "lightApiIds": [
+        "cf4ea6db-d41e-423e-abc8-0a8f46c59aec"
+      ],
+      "apiId": "af9f255d-594d-4fb2-a746-097ba035f3bc",
+      "idv1": "/groups/4",
+      "type": "entertainment",
+      "bridgeId": 2,
+      "id": 7
+    }
+  ]
+}
