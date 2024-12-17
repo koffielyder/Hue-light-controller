@@ -20,11 +20,6 @@ module.exports = {
 
     // Id of the entertainment area to control
     const entertainmentConfigurationId = Buffer.from(entertainmentId, "ascii")
-    //channelData = channels.map((channel, index) => {
-    //  return Buffer.from([index, ...channel])
-    //});
-
-
     const channelData = channels.map((channel, index) => {
       return Buffer.from([
         index,
@@ -46,5 +41,49 @@ module.exports = {
       ...channelData,])
 
     return buffer;
+  },
+  serverResponse: (action, errorMessage = "Request failed", throwErr = false) => {
+    return async (req, res) => {
+
+      try {
+        funcArguments = (action + '')
+        .replace(/[/][/].*$/mg, '') // strip single-line comments
+        .replace(/\s+/g, '') // strip white space
+        .replace(/[/][*][^/*]*[*][/]/g, '') // strip multi-line comments
+        .split('){', 1)[0].replace(/^[^(]*[(]/, '') // extract the parameters
+        //.replace(/=[^,]+/g, '') // strip any ES6 defaults
+        .split(',').filter(Boolean); // split & filter [""]
+
+        const args = [];
+        const provided = {
+          ...req.params,
+          ...req.body,
+        };
+        for (let i = 0; i < funcArguments.length; i++) {
+          let arg = funcArguments[i];
+          if (arg.includes('=')) {
+            // has default value
+            arg = arg.split('=');
+            if (provided[arg[0]]) args.push(provided[arg[0]])
+            else args.push(arg[1].substring(1, arg[1].length-1));
+          } else {
+            // is required
+            if (provided[arg]) args.push(provided[arg])
+            else throw new Error(`Required param ${arg} not set`)
+          }
+        }
+        const response = await action(...args);
+        res.json(response)
+      } catch(err) {
+        console.error(errorMessage,
+          err);
+        res.status(500).json({
+          error: errorMessage,
+          details: err.message
+        });
+        if (throwErr) throw err;
+      }
+    }
   }
+
 }

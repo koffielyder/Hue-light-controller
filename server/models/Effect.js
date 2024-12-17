@@ -14,12 +14,14 @@ class Effect {
   parsedEffect = null;
   startLightState = null;
   endLightState = null;
+  repeat = false;
 
   constructor(effectData) {
     this.lightData = effectData.effect;
     this.interval = effectData.interval;
     this.duration = effectData.duration;
-    if (effectData.lights) this.startLightState = effectData.lights
+    if (effectData.repeat) this.repeat = effectData.repeat;
+    if (effectData.startLightState) this.startLightState = effectData.startLightState
     else this.setStartLightState();
   }
 
@@ -29,6 +31,7 @@ class Effect {
   }
 
   parseEffect() {
+    this.endLightState = [];
     const lightsData = this.lightData.map((lightData, lightIndex) => {
       const parsed = this.parseLight(lightData, lightIndex);
       return parsed;
@@ -56,7 +59,6 @@ class Effect {
     let steps = this.duration / this.interval;
     let lastLightState = this.startLightState[lightIndex];
     const result = [];
-    this.endLightState = [];
 
     for (let i = 0; i < lightData.length; i++) {
       const stepData = lightData[i];
@@ -69,17 +71,24 @@ class Effect {
       }
       stepData.colors = stepData.colors.map(color => this.parseColor(color, lightIndex, lastLightState))
       // parse transition
-      result.push(...this.transition([lastLightState, ...stepData.colors], transitionSteps, stepData.formula));
-      index = index + transitionSteps;
-      this.endLightState.push(stepData.colors[stepData.colors.length - 1])
+      if (!stepData.formula) {
+        result.push(stepData.colors[0])
+        index++;
+      } else {
+        result.push(...this.transition([lastLightState, ...stepData.colors], transitionSteps, stepData.formula));
+        index = index + transitionSteps;
+      }
+      lastLightState = result[result.length - 1];
       if (i == lightData.length - 1) {
         if (index < steps - 1) {
           const endLenght = (steps - index);
-          result.push(...Array(endLenght).fill(stepData.colors[stepData.colors.length - 1]))
+          result.push(...Array(endLenght).fill(result[result.length - 1]))
           index = index + endLenght;
         }
       }
     }
+    this.endLightState.push(result[result.length - 1])
+
     return result;
   }
 

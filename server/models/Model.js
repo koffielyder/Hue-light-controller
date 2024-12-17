@@ -29,8 +29,7 @@ class Model extends DbModel {
           return target.properties[prop];
         } else if (prop in target.constructor.relations) {
           const relation = target.constructor.relations[prop];
-                        const keyValue = target.properties[relation.localKey];
-
+          const keyValue = target.properties[relation.localKey] || target[relation.localKey]; // undefined
           switch (relation.type) {
             case "belongsTo":
               target.properties[prop] = relation.model.find(keyValue)
@@ -81,13 +80,17 @@ class Model extends DbModel {
       return this.allRaw().map(item => new this(item));
     }
 
-    static find(id) {
+    static find(id,
+      throwError = false) {
       if (Array.isArray(id)) {
         return this.where('id', id);
       }
       const items = this.allRaw();
       const index = items.findIndex(item => item.id == id);
-      if (index == -1) return null;
+      if (index == -1) {
+        if (throwError) throw new Error(`Model with id ${id} not found`, 404)
+        return null;
+      }
       const model = new this(items[index]);
       return model;
     }
@@ -131,7 +134,8 @@ class Model extends DbModel {
     }
 
     // static update
-    static update(items, indexKey = 'id') {
+    static update(items,
+      indexKey = 'id') {
       let returnSingle = false;
       if (!Array.isArray(items)) returnSingle = true;
       items = this.prepItems(items,
@@ -144,6 +148,13 @@ class Model extends DbModel {
       items = this.prepItems(items,
         true);
       return this.find(this.addData(items, indexKey, true));
+    }
+
+    toJSON() {
+      return {
+        id: this.id,
+        ...this.properties,
+      }
     }
 
     // static remove

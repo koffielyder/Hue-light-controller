@@ -31,19 +31,18 @@ class HueStream {
           duration: 6000,
           interval: 25,
           repeat: true,
-          originalLights: this.originalLights,
-          lights: this.lights.map(light => light.color),
+          startLightState: this.lastLightState,
           effect: this.lights.map(light => [{
             start: 0, end: 100, colors: [["start", "start", "start"]], formula: 't' // green
           },
             {
-              start: 100, end: 300, colors: [["last", "last", 100]], formula: 't' // red
+              start: 100, end: 300, colors: [["start", "start", 100]], formula: 't' // red
             },
             {
-              start: 300, end: 500, colors: [["last", "last", "start"]], formula: 't' // green
+              start: 300, end: 500, colors: [["start", "start", "start"]], formula: 't' // green
             },
             {
-              start: 500, end: 700, colors: [["last", "last", 100]], formula: 't' // red
+              start: 500, end: 700, colors: [["start", "start", 100]], formula: 't' // red
             },
             {
               start: 700, end: 900, colors: [["start", "start", "start"]], formula: 't' // green
@@ -62,13 +61,10 @@ class HueStream {
 
   async syncLights() {
     const lights = await this.group.getLightStatuses();
-    this.lights = lights.map(lightData => {
-      return {
-        color: [lightData.color.xy.x, lightData.color.xy.y, Math.round(lightData.dimming.brightness * 2.55)]
-      }
-    });
-    this.lastLightState = Object.assign({}, this.lights);
-    this.originalLights = Object.assign({}, this.lights);
+    this.lights = lights.map(
+      lightData => [lightData.color.xy.x, lightData.color.xy.y, Math.round(lightData.dimming.brightness * 2.55)]
+    );
+    this.lastLightState = this.lights;
     this.setIdleEffect();
     return this.lights;
   }
@@ -119,8 +115,11 @@ class HueStream {
       this.setActiveEffect(this.effectQueue[0]);
       this.isIdle = false;
       this.effectQueue.shift();
+      return true;
     } else {
+      if (this.isIdle) return false;
       this.playIdle()
+      return true;
     }
   }
 
@@ -129,7 +128,7 @@ class HueStream {
   }
 
   async addToQueue(effect) {
-    if (!effect instanceof Effect) effect = new Effect( {
+    if (!(effect instanceof Effect)) effect = new Effect( {
       ...effect, startLightState: this.lastLightState,
     });
     if (!effect.parsedEffect) await effect.parseEffect();
@@ -139,4 +138,4 @@ class HueStream {
   }
 }
 
-  module.exports = new HueStream();
+module.exports = new HueStream();

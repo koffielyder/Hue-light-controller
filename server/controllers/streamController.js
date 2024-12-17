@@ -8,112 +8,66 @@ const {
   dtls
 } = require("node-dtls-client");
 
-exports.createStream = async (group) => {
-  await oldActivateStreaming(group);
+// connect
+exports.connect = connectSocket;
+
+// addQueue
+exports.addQueue = addToQueue;
+
+exports.addQueueTest = addToQueueTest;
+// playNext
+exports.playNext = playNextEffect;
+
+async function connectSocket(groupId) {
+  const group = Group.find(groupId, true);
+  await group.activateStreaming();
   hueStream.setGroup(group)
   await hueStream.syncLights();
+  hueStream.setSocket(await openSocket(socketOptions(group)));
+  return true;
+}
 
-  const bridgeIp = group.bridge.ip;
-  const bridgeClientkey = group.bridge.clientkey;
+async function addToQueue(lightData) {
+  return await hueStream.addToQueue(lightData)
+}
 
-  const pskBinary = Buffer.from(bridgeClientkey, 'hex');
-  const options = {
+async function addToQueueTest() {
+  const lightData = {
+    duration: 2000,
+    interval: 50,
+    effect: hueStream.lights.map(light => [{
+      start: 0, end: 900, colors: [["start", "start", 255]], formula: 't'
+    },
+      {
+        start: 900, colors: [["start", "start", 50]]
+      },
+      {
+        start: 1600, end: 2000, colors: [["start", "start", "start"]], formula: 't'
+      },
+    ]),
+  }
+  return await addToQueue(lightData)
+}
+
+async function playNextEffect() {
+  if (!await hueStream.playNext()) throw new Error('queue empty')
+  return true;
+}
+
+function socketOptions(group) {
+  return {
     type: "udp4",
-    address: bridgeIp,
+    address: group.bridge.ip,
     port: 2100,
     psk: {
-      "hue-application-id": pskBinary // Key should be binary (not a hex string)
+      "hue-application-id": Buffer.from(group.bridge.clientkey, 'hex') // Key should be binary (not a hex string)
     },
     timeout: 2000,
     ciphers: ["TLS_PSK_WITH_AES_128_GCM_SHA256"],
   };
-  hueStream.setSocket(await openSocket(options));
-  return hueStream;
-}
-
-exports.addToQueue = (req, res) => {
-  if (!hueStream.isStreaming) return res.json({
-    success: false,
-    message: "Hue stream is not active"
-  })
-  try {
-    const effectData = {
-      effect,
-      interval,
-      duration
-    } = req.body;
-    await hueStream.addToQueue(effectData);
-    res.json({
-      success: true,
-      queue: hueStream.effectQueue.length
-    })
-  } catch (err) {
-    res.json({
-      success: false,
-      message: err.message
-    })
-    console.log(err);
-  }
 }
 
 
-// activate stream on group
-async function activateStreaming(group) {
-  try {
-
-    if (!group.type == 'entertainment' || !group.apiId) throw new Error(`Group with id ${group.id} does not have a apiId`)
-    const url = `https://${group.bridge.ip}/clip/v2/resource/entertainment_configuration/${group.apiId}`;
-    const response = await axios.put(url, {
-      action: "start"
-    }, {
-      headers: {
-        'hue-application-key': group.bridge.apikey
-      }
-    });
-    console.log('Streaming activated:', response.data);
-    return {
-      active: true,
-    };
-  } catch (err) {
-    console.error('Error activating streaming:', err.message);
-    throw err;
-  }
-}
-
-async function oldActivateStreaming(group) {
-  try {
-    const url = `http://${group.bridge.ip}/api/${group.bridge.apikey}${group.idv1}`;
-    const response = await axios.put(url, {
-      stream: {
-        active: true
-      }
-    })
-
-    if (response.error) throw new Error(error);
-    console.log('Streaming activated:', response.data);
-    return response;
-  } catch (err) {
-    console.error('Error activating streaming:', err.message);
-    throw err;
-  }
-}
-
-async function deactivateStreaming(group) {
-  try {
-    const url = `http://${group.bridge.ip}/api/${group.bridge.apikey}${group.idv1}`;
-    const response = await axios.put(url, {
-      stream: {
-        active: false
-      }
-    });
-    if (response.error) throw new Error(error);
-    console.log('Streaming deactivated:', response.data);
-    return response;
-  } catch (err) {
-    console.error('Error deactivating streaming:', err.message);
-    throw err;
-  }
-}
 
 
 // start streaming
@@ -195,6 +149,6 @@ async function closeSocket(socket) {
     }
   }
 
-  await deactivateStreaming(hueStream.group);
+  await hueStream.group.deactivateStreaming();
   return true;
 }

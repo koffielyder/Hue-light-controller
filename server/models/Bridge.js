@@ -5,7 +5,7 @@ class Bridge extends Model {
   static fields = {
     name: {
       required: true,
-      default: null,
+      defaultValue: null,
         type: 'string',
       },
       ip: {
@@ -23,10 +23,11 @@ class Bridge extends Model {
       }
     }
 
+
     async getLightStatuses() {
       return await Light.getLightStatuses(this.ip, this.apikey);
     }
-    
+
     async syncGroups() {
       return await Group.getAllGroups(this.ip, this.apikey);
     }
