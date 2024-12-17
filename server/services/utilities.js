@@ -53,7 +53,6 @@ module.exports = {
         .split('){', 1)[0].replace(/^[^(]*[(]/, '') // extract the parameters
         //.replace(/=[^,]+/g, '') // strip any ES6 defaults
         .split(',').filter(Boolean); // split & filter [""]
-
         const args = [];
         const provided = {
           ...req.params,

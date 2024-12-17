@@ -9,8 +9,8 @@ exports.list = getGroups;
 exports.sync = syncGroups;
 
 async function getGroups(bridgeId) {
-  const bridge = Bridge.find(bridgeId);
-  return bridge.groups;
+  const groups = Group.where('bridgeId', bridgeId);
+  return groups;
 }
 
 async function syncGroups(bridgeId) {

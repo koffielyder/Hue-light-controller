@@ -12,7 +12,7 @@ exports.connect = connectToBridge;
 exports.sync = syncBridge;
 
 
-async function getBridge(id) {
+async function getBridge(id = 1) {
   const bridge = Bridge.find(id);
   if (bridge) return bridge;
   throw new Error(`Bridge with id '${id}' not found`, 404)

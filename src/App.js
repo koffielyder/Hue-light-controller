@@ -1,16 +1,20 @@
-import logo from './logo.svg';
-import './App.css';
-import React, { useState } from 'react';
+import React from 'react';
+import { BridgeProvider } from './context/BridgeContext';
+import BridgeConnector from './components/BridgeConnector';
+import BridgeSelect from './components/BridgeSelect';
 
 function App() {
-
-
-// Usage
-
-
   return (
-    <div>
-    </div>
+    <BridgeProvider>
+      <div>
+        <h1>Hue Bridge Manager</h1>
+        {/* Component to connect to a bridge */}
+        <BridgeConnector />
+        
+        {/* Component to select an already connected bridge */}
+        <BridgeSelect />
+      </div>
+    </BridgeProvider>
   );
 }
 
