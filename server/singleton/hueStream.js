@@ -106,15 +106,15 @@ class HueStream {
     this.removeActiveEffect();
   
     let i = 0;
-    const max = Math.floor(effect.duration / effect.interval) - 1;
-    const startTime = performance.now(); // High-resolution start time
-  
+    const max = effect.parsedEffect.length - 1;
+    let startTime = performance.now(); // High-resolution start time
     const scheduleEffect = (currentTime) => {
       const elapsedTime = currentTime - startTime;
   
-      if (i >= max) {
+      if (i > max) {
         if (effect.repeat) {
           i = 0; // Reset the effect index if repeating
+          startTime = performance.now();
         } else {
           this.playNext(); // Stop or play the next effect if not repeating
           return;
