@@ -1,9 +1,7 @@
 import React, { createContext, useState, useContext } from 'react';
 
-// Create the context
 const BridgeContext = createContext();
 
-// Context Provider Component
 export const BridgeProvider = ({ children }) => {
   const [selectedBridge, setSelectedBridge] = useState(null);
 
@@ -14,7 +12,4 @@ export const BridgeProvider = ({ children }) => {
   );
 };
 
-// Custom hook to use the Bridge Context
-export const useBridge = () => {
-  return useContext(BridgeContext);
-};
+export const useBridge = () => useContext(BridgeContext);

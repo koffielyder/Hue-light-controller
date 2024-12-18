@@ -1,0 +1,103 @@
+/* Top Navigation Menu */
+.top-menu {
+    display: flex;
+    align-items: center;
+    background-color: #333;
+    padding: 10px;
+    color: white;
+    gap: 15px;
+  }
+  
+  .select-bridge {
+    padding: 5px;
+    border-radius: 5px;
+  }
+  
+  .discover-button {
+    background-color: #0078d7;
+    color: white;
+    border: none;
+    padding: 5px 10px;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+  }
+  
+  .discover-button:hover {
+    background-color: #005fa3;
+  }
+  
+  /* Status Fields */
+  .status-fields {
+    display: flex;
+    flex-direction: column;
+    color: white;
+  }
+  
+  .status-field {
+    font-size: 10px;
+  }
+
+  .status-field label {
+    margin-right: 5px;
+  }
+  
+  .status-field span {
+    color: #28a745;
+  }
+
+  .status-field span.error {
+    color: #ff3838;
+  }
+  
+  /* Popup Modal */
+  .popup-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.6);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+  }
+  
+  .popup-content {
+    background-color: white;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+    text-align: center;
+    max-width: 400px;
+    width: 100%;
+  }
+  
+  .connect-button,
+  .close-button {
+    margin-top: 10px;
+    padding: 5px 10px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+  }
+  
+  .connect-button {
+    background-color: #28a745;
+    color: white;
+  }
+  
+  .close-button {
+    background-color: #dc3545;
+    color: white;
+  }
+  
+  .connect-button:hover {
+    background-color: #218838;
+  }
+  
+  .close-button:hover {
+    background-color: #c82333;
+  }
+  
