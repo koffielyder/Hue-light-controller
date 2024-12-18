@@ -21,7 +21,7 @@ const LightEffectsManager = () => {
 
   // Preload the audio when the component mounts
   useEffect(() => {
-    const audioInstance = new Audio('/sounds/120bpm.mp3');
+    const audioInstance = new Audio('/sounds/song.mp3');
     audioInstance.preload = "auto";
     setAudio(audioInstance);
   }, []);
@@ -104,6 +104,11 @@ const LightEffectsManager = () => {
     }
   };
 
+  const stopMusic = async () => {
+    audio.pause();
+    audio.currentTime = 0; // Ensure the audio starts from the beginning
+  }
+
   const createChannelsForGroup = () => {
     console.log(globalGroup);
     if (globalGroup && globalGroup.lights) {
@@ -160,6 +165,9 @@ const LightEffectsManager = () => {
       </button>
       <button onClick={sendLightData} className="add-channel-button">
         Play now
+      </button>
+      <button onClick={stopMusic} className="add-channel-button">
+        Stop music
       </button>
     </div>
   );
