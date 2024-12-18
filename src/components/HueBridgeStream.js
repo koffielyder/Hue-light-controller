@@ -65,7 +65,8 @@ const HueBridgeStream = ({ pollInterval = 5000 }) => {
 
     try {
       const response = await axios.post(`/api/stream/connect`, {
-        groupId: selectedGroup.id
+        groupId: selectedGroup.id,
+        testing: true,
       });
       if (response.status === 200) {
         setIsStreaming(true);

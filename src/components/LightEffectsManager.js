@@ -1,5 +1,6 @@
 import React, {
   useState,
+  useEffect,
   useContext
 } from "react";
 import AddTransitionForm from "./AddTransitionForm";
@@ -13,13 +14,17 @@ import {
 } from "../utils/colorUtils";
 
 const LightEffectsManager = () => {
-  const [channels,
-    setChannels] = useState([]);
-  const [currentChannelIndex,
-    setCurrentChannelIndex] = useState(null);
-  const {
-    globalGroup
-  } = useContext(BridgeContext);
+  const [channels, setChannels] = useState([]);
+  const [currentChannelIndex, setCurrentChannelIndex] = useState(null);
+  const { globalGroup } = useContext(BridgeContext);
+  const [audio, setAudio] = useState(null);
+
+  // Preload the audio when the component mounts
+  useEffect(() => {
+    const audioInstance = new Audio('/sounds/120bpm.mp3');
+    audioInstance.preload = "auto";
+    setAudio(audioInstance);
+  }, []);
 
   const addChannel = () => {
     const newChannel = {
@@ -33,27 +38,30 @@ const LightEffectsManager = () => {
     setChannels((prevChannels) =>
       prevChannels.map((channel) =>
         channel.index === channelIndex
-        ? {
-          ...channel, transitions: updatedTransitions
-        }: channel
+          ? { ...channel, transitions: updatedTransitions }
+          : channel
       )
     );
   };
+
   const parseEffect = () => {
     return {
       duration: 2000,
       interval: 50,
       repeat: true,
-      effect: channels.map(channel => channel.transitions.map(trans => {
-        return {
-          start: trans.start,
-          end: trans.end,
-          formula: trans.formula,
-          color: hexToXyb(trans.color),
-        };
-      }))
+      effect: channels.map((channel) =>
+        channel.transitions.map((trans) => {
+          return {
+            start: trans.start,
+            end: trans.end,
+            formula: trans.formula,
+            color: hexToXyb(trans.color),
+          };
+        })
+      ),
     };
-  }
+  };
+
   const addToQueue = async () => {
     try {
       const res = await fetch('http://localhost:5000/api/stream/queue/add', {
@@ -70,7 +78,8 @@ const LightEffectsManager = () => {
     } catch (error) {
       console.error('Error:', error);
     }
-  }
+  };
+
   const sendLightData = async () => {
     try {
       const res = await fetch('http://localhost:5000/api/stream/play', {
@@ -84,13 +93,19 @@ const LightEffectsManager = () => {
       });
 
       const data = await res.json();
+
+      // Play preloaded audio after successful response
+      if (res.ok && audio) {
+        audio.currentTime = 0; // Ensure the audio starts from the beginning
+        audio.play();
+      }
     } catch (error) {
       console.error('Error:', error);
     }
   };
 
   const createChannelsForGroup = () => {
-    console.log(globalGroup)
+    console.log(globalGroup);
     if (globalGroup && globalGroup.lights) {
       globalGroup.lights.forEach((light, index) => {
         const newChannel = {
@@ -98,7 +113,7 @@ const LightEffectsManager = () => {
           transitions: [],
           lightName: light.name
         };
-        setChannels(prevChannels => [...prevChannels, newChannel]);
+        setChannels((prevChannels) => [...prevChannels, newChannel]);
       });
     }
   };
@@ -118,13 +133,11 @@ const LightEffectsManager = () => {
         {channels.map((channel) => (
           <div
             key={channel.index}
-            className={`channel-card ${currentChannelIndex === channel.index ? "active": ""}`}
+            className={`channel-card ${currentChannelIndex === channel.index ? "active" : ""}`}
             onClick={() => setCurrentChannelIndex(channel.index)}
-            >
+          >
             <h3>Channel {channel.index}</h3>
-            <p>
-              Transitions: {channel.transitions.length}
-            </p>
+            <p>Transitions: {channel.transitions.length}</p>
           </div>
         ))}
       </div>
@@ -134,11 +147,11 @@ const LightEffectsManager = () => {
           <AddTransitionForm
             transitions={channels[currentChannelIndex].transitions}
             onUpdate={(updated) => updateTransitions(currentChannelIndex, updated)}
-            />
+          />
           <TransitionsList
             transitions={channels[currentChannelIndex].transitions}
             onUpdate={(updated) => updateTransitions(currentChannelIndex, updated)}
-            />
+          />
         </>
       )}
 
