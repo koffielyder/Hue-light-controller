@@ -104,32 +104,50 @@ class HueStream {
   setActiveEffect(effect) {
     this.isIdle = false;
     this.removeActiveEffect();
+  
     let i = 0;
-    const max = (effect.duration / effect.interval) - 1;
-    this.activeEffect = setInterval(() => {
+    const max = Math.floor(effect.duration / effect.interval) - 1;
+    const startTime = performance.now(); // High-resolution start time
+  
+    const scheduleEffect = (currentTime) => {
+      const elapsedTime = currentTime - startTime;
+  
       if (i >= max) {
-        if (effect.repeat) i = 0;
-        else this.playNext()
+        if (effect.repeat) {
+          i = 0; // Reset the effect index if repeating
+        } else {
+          this.playNext(); // Stop or play the next effect if not repeating
+          return;
+        }
       }
+  
       try {
         const message = utilities.buildStreamMessage(this.group.apiId, effect.parsedEffect[i]);
-        if (!this.isTesting) this.socket.send(message,
-          (error) => {
-            if (error) console.error('❌ Failed to send UDP stream:', error);
-            // else console.log(`📡 Stream message sent`);
+        if (!this.isTesting) {
+          this.socket.send(message, (error) => {
+            if (error) {
+              console.error('❌ Failed to send UDP stream:', error);
+            }
           });
+        }
       } catch (err) {
-        console.error('Failed to build message')
-        console.log(err)
+        console.error('Failed to build message:', err);
       }
-
+  
       i++;
-
-    },
-      effect.interval)
+  
+      // Schedule the next execution
+      const nextEffectTime = startTime + i * effect.interval;
+      const delay = Math.max(0, nextEffectTime - performance.now()); // Ensure no negative delay
+      this.activeEffect = setTimeout(() => scheduleEffect(performance.now()), delay);
+    };
+  
+    // Start the scheduling
+    scheduleEffect(performance.now());
+  
     return true;
   }
-
+  
   playNext() {
     if (this.effectQueue.length) {
       this.setActiveEffect(this.effectQueue[0]);
