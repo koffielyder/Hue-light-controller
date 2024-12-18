@@ -8,8 +8,6 @@ const {
   dtls
 } = require("node-dtls-client");
 
-const testing = true;
-
 // connect
 exports.connect = connectSocket;
 exports.disconnect = disconnectSocket;
@@ -22,12 +20,17 @@ exports.addQueueTest = addToQueueTest;
 // playNext
 exports.playNext = playNextEffect;
 
+exports.play = playEffect;
+
+
 exports.status = getStatus;
 
 
-async function connectSocket(groupId) {
+async function connectSocket(groupId, testing = false) {
+  console.log(testing == false)
+  console.log(testing)
   const group = Group.find(groupId, true);
-  if(!testing) await group.activateStreaming();
+  if (!testing) await group.activateStreaming();
   hueStream.isTesting = testing;
   hueStream.setGroup(group);
   await hueStream.syncLights();
@@ -40,13 +43,7 @@ async function disconnectSocket() {
 }
 
 async function addToQueue(lightData) {
-  lightData.effect = lightData.effect.map(
-    effects => effects.map(effect => {
-      return {
-        ...effect, colors: [[effect.color.x, effect.color.y, effect.color.bri]]
-      }
-    })
-  )
+  lightData.effect = parseLightData(lightData.effect)
   return await hueStream.addToQueue(lightData)
 }
 
@@ -73,10 +70,24 @@ async function playNextEffect() {
   return true;
 }
 
+async function playEffect(lightData) {
+  lightData.effect = parseLightData(lightData.effect)
+  return await hueStream.playEffect(lightData)
+}
+
 async function getStatus() {
   return hueStream.isStreaming;
 }
 
+function parseLightData(data) {
+  return data.map(
+    effects => effects.map(effect => {
+      return {
+        ...effect, colors: [[effect.color.x, effect.color.y, effect.color.bri]]
+      }
+    })
+  )
+}
 
 function socketOptions(group) {
   return {
@@ -98,7 +109,8 @@ function socketOptions(group) {
 
 
 async function openSocket(options, retryIndex = 0, maxRetry = 3) {
-  if(testing) return true;
+  if (hueStream.isTesting) return true;
+  if (hueStream.isStreaming) return true;
   if (retryIndex >= maxRetry) throw new Error(`Failed opening socket after ${retryIndex++} tries`, 569)
   const socket = dtls.createSocket(options);
 

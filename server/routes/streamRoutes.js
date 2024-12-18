@@ -12,6 +12,7 @@ router.get('/disconnect', streamController.disconnect, eRouter);
 router.post('/disconnect', streamController.disconnect, eRouter);
 
 router.get('/status', streamController.status, eRouter);
+router.post('/play', streamController.play, eRouter);
 
 router.post('/queue/add', streamController.addQueue, eRouter);
 router.get('/queue/add', streamController.addQueueTest, eRouter);

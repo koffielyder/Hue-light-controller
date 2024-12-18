@@ -64,7 +64,8 @@ module.exports = {
             // has default value
             arg = arg.split('=');
             if (provided[arg[0]]) args.push(provided[arg[0]])
-            else args.push(arg[1].substring(1, arg[1].length-1));
+            else args.push(eval(arg[1]));
+            //else args.push(arg[1].substring(1, arg[1].length-1));
           } else {
             // is required
             if (provided[arg]) args.push(provided[arg])

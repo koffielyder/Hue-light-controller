@@ -4,7 +4,7 @@ const Bridge = require('../models/Bridge');
 const axios = require('axios');
 
 const utilities = require('../services/utilities');
-const isTesting = true;
+const isTesting = false;
 exports.list = getGroups;
 exports.sync = syncGroups;
 exports.lights = groupLights;

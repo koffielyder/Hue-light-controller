@@ -1,14 +1,25 @@
-import React, { useState, useContext } from "react";
+import React, {
+  useState,
+  useContext
+} from "react";
 import AddTransitionForm from "./AddTransitionForm";
 import TransitionsList from "./TransitionsList";
-import { BridgeContext } from "../context/BridgeContext";
+import {
+  BridgeContext
+} from "../context/BridgeContext";
 import "./style/LightEffectsManager.css";
-import { hexToXyb } from "../utils/colorUtils";
+import {
+  hexToXyb
+} from "../utils/colorUtils";
 
 const LightEffectsManager = () => {
-  const [channels, setChannels] = useState([]);
-  const [currentChannelIndex, setCurrentChannelIndex] = useState(null);
-  const { globalGroup } = useContext(BridgeContext);
+  const [channels,
+    setChannels] = useState([]);
+  const [currentChannelIndex,
+    setCurrentChannelIndex] = useState(null);
+  const {
+    globalGroup
+  } = useContext(BridgeContext);
 
   const addChannel = () => {
     const newChannel = {
@@ -22,34 +33,54 @@ const LightEffectsManager = () => {
     setChannels((prevChannels) =>
       prevChannels.map((channel) =>
         channel.index === channelIndex
-        ? { ...channel, transitions: updatedTransitions }
-        : channel
+        ? {
+          ...channel, transitions: updatedTransitions
+        }: channel
       )
     );
   };
-
-  const sendLightData = async () => {
+  const parseEffect = () => {
+    return {
+      duration: 2000,
+      interval: 50,
+      repeat: true,
+      effect: channels.map(channel => channel.transitions.map(trans => {
+        return {
+          start: trans.start,
+          end: trans.end,
+          formula: trans.formula,
+          color: hexToXyb(trans.color),
+        };
+      }))
+    };
+  }
+  const addToQueue = async () => {
     try {
-      const body = {
-        duration: 2000,
-        interval: 50,
-        repeat: true,
-        effect: channels.map(channel => channel.transitions.map(trans => {
-          return {
-            start: trans.start,
-            end: trans.end,
-            formula: trans.formula,
-            color: hexToXyb(trans.color),
-          };
-        }))
-      };
-
       const res = await fetch('http://localhost:5000/api/stream/queue/add', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ lightData: body })
+        body: JSON.stringify({
+          lightData: parseEffect()
+        })
+      });
+
+      const data = await res.json();
+    } catch (error) {
+      console.error('Error:', error);
+    }
+  }
+  const sendLightData = async () => {
+    try {
+      const res = await fetch('http://localhost:5000/api/stream/play', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          lightData: parseEffect()
+        })
       });
 
       const data = await res.json();
@@ -87,11 +118,13 @@ const LightEffectsManager = () => {
         {channels.map((channel) => (
           <div
             key={channel.index}
-            className={`channel-card ${currentChannelIndex === channel.index ? "active" : ""}`}
+            className={`channel-card ${currentChannelIndex === channel.index ? "active": ""}`}
             onClick={() => setCurrentChannelIndex(channel.index)}
-          >
+            >
             <h3>Channel {channel.index}</h3>
-            <p>Transitions: {channel.transitions.length}</p>
+            <p>
+              Transitions: {channel.transitions.length}
+            </p>
           </div>
         ))}
       </div>
@@ -101,16 +134,19 @@ const LightEffectsManager = () => {
           <AddTransitionForm
             transitions={channels[currentChannelIndex].transitions}
             onUpdate={(updated) => updateTransitions(currentChannelIndex, updated)}
-          />
+            />
           <TransitionsList
             transitions={channels[currentChannelIndex].transitions}
             onUpdate={(updated) => updateTransitions(currentChannelIndex, updated)}
-          />
+            />
         </>
       )}
 
+      <button onClick={addToQueue} className="add-channel-button">
+        Add to queue
+      </button>
       <button onClick={sendLightData} className="add-channel-button">
-        Send
+        Play now
       </button>
     </div>
   );

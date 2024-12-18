@@ -36,18 +36,18 @@ class HueStream {
           effect: this.lights.map(light => [{
             start: 0, end: 100, colors: [["start", "start", "start"]], formula: 't' // green
           },
-          {
-            start: 100, end: 300, colors: [["start", "start", 100]], formula: 't' // red
-          },
-          {
-            start: 300, end: 500, colors: [["start", "start", "start"]], formula: 't' // green
-          },
-          {
-            start: 500, end: 700, colors: [["start", "start", 100]], formula: 't' // red
-          },
-          {
-            start: 700, end: 900, colors: [["start", "start", "start"]], formula: 't' // green
-          },]),
+            {
+              start: 100, end: 300, colors: [["start", "start", 100]], formula: 't' // red
+            },
+            {
+              start: 300, end: 500, colors: [["start", "start", "start"]], formula: 't' // green
+            },
+            {
+              start: 500, end: 700, colors: [["start", "start", 100]], formula: 't' // red
+            },
+            {
+              start: 700, end: 900, colors: [["start", "start", "start"]], formula: 't' // green
+            },]),
         });
         this.idleEffect.parseEffect();
       } catch (err) {
@@ -102,6 +102,7 @@ class HueStream {
   }
 
   setActiveEffect(effect) {
+    this.isIdle = false;
     this.removeActiveEffect();
     let i = 0;
     const max = (effect.duration / effect.interval) - 1;
@@ -126,6 +127,7 @@ class HueStream {
 
     },
       effect.interval)
+    return true;
   }
 
   playNext() {
@@ -141,12 +143,20 @@ class HueStream {
     }
   }
 
+  async playEffect(effect) {
+    if (!(effect instanceof Effect)) effect = new Effect( {
+      ...effect, startLightState: this.lastLightState,
+    });
+    if (!effect.parsedEffect) await effect.parseEffect();
+    return this.setActiveEffect(effect);
+  }
+
   removeActiveEffect() {
     if (this.activeEffect !== null) clearInterval(this.activeEffect);
   }
 
   async addToQueue(effect) {
-    if (!(effect instanceof Effect)) effect = new Effect({
+    if (!(effect instanceof Effect)) effect = new Effect( {
       ...effect, startLightState: this.lastLightState,
     });
     if (!effect.parsedEffect) await effect.parseEffect();
@@ -158,7 +168,7 @@ class HueStream {
 
   async closeSocket() {
     this.isStreaming = false;
-    if(this.isTesting) return true;
+    if (this.isTesting) return true;
     if (this.socket) {
       try {
         await this.socket.close();
