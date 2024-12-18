@@ -134,7 +134,7 @@ class HueStream {
     if (!effect.parsedEffect) await effect.parseEffect();
     this.effectQueue.push(effect);
     this.lastLightState = effect.endLightState;
-    return true;
+    return effect;
   }
 }
 

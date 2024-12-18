@@ -28,6 +28,13 @@ async function connectSocket(groupId) {
 }
 
 async function addToQueue(lightData) {
+  lightData.effect = lightData.effect.map(
+    effects => effects.map(effect => {
+      return {
+        ...effect, colors: [[effect.color.x, effect.color.y, effect.color.bri]]
+      }
+    })
+  )
   return await hueStream.addToQueue(lightData)
 }
 
