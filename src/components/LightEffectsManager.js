@@ -1,35 +1,49 @@
-import React, {
-  useState,
-  useEffect,
-  useContext
-} from "react";
+import React, { useState, useEffect, useContext } from "react";
 import AddTransitionForm from "./AddTransitionForm";
 import TransitionsList from "./TransitionsList";
-import {
-  BridgeContext
-} from "../context/BridgeContext";
+import { BridgeContext } from "../context/BridgeContext";
 import "./style/LightEffectsManager.css";
-import {
-  hexToXyb
-} from "../utils/colorUtils";
+import { hexToXyb } from "../utils/colorUtils";
 
 const LightEffectsManager = () => {
   const [channels, setChannels] = useState([]);
   const [currentChannelIndex, setCurrentChannelIndex] = useState(null);
   const { globalGroup } = useContext(BridgeContext);
   const [audio, setAudio] = useState(null);
+  const [bpm, setBpm] = useState(120); // Default BPM
+  const [duration, setDuration] = useState(2000); // Default duration in ms
+  const [interval, setInterval] = useState(500); // Default interval in ms
+
+  // Calculate interval whenever BPM changes
+  useEffect(() => {
+    const calculatedInterval = calculateSmallestInterval(bpm);
+    setInterval(calculatedInterval);
+  }, [bpm]);
 
   // Preload the audio when the component mounts
   useEffect(() => {
-    const audioInstance = new Audio('/sounds/song.mp3');
+    const audioInstance = new Audio("/sounds/song.mp3");
     audioInstance.preload = "auto";
     setAudio(audioInstance);
   }, []);
 
+  const calculateSmallestInterval = (bpm) => {
+    const beatDuration = 60000 / bpm; // Duration of one beat in milliseconds
+    const minInterval = 50; // Minimum allowed interval in milliseconds
+    let interval = beatDuration;
+  
+    while (interval > minInterval) {
+      interval /= 2; // Halve the interval to create smaller subdivisions
+    }
+    interval *= 2;
+  
+    return Math.max(interval, minInterval); // Ensure it does not go below the minimum
+  };
+
   const addChannel = () => {
     const newChannel = {
       index: channels.length,
-      transitions: []
+      transitions: [],
     };
     setChannels([...channels, newChannel]);
   };
@@ -46,8 +60,8 @@ const LightEffectsManager = () => {
 
   const parseEffect = () => {
     return {
-      duration: 2000,
-      interval: 50,
+      duration,
+      interval,
       repeat: true,
       effect: channels.map((channel) =>
         channel.transitions.map((trans) => {
@@ -63,33 +77,35 @@ const LightEffectsManager = () => {
   };
 
   const addToQueue = async () => {
+    console.log(parseEffect());
+    return
     try {
-      const res = await fetch('http://localhost:5000/api/stream/queue/add', {
-        method: 'POST',
+      const res = await fetch("http://localhost:5000/api/stream/queue/add", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          lightData: parseEffect()
-        })
+          lightData: parseEffect(),
+        }),
       });
 
       const data = await res.json();
     } catch (error) {
-      console.error('Error:', error);
+      console.error("Error:", error);
     }
   };
 
   const sendLightData = async () => {
     try {
-      const res = await fetch('http://localhost:5000/api/stream/play', {
-        method: 'POST',
+      const res = await fetch("http://localhost:5000/api/stream/play", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          lightData: parseEffect()
-        })
+          lightData: parseEffect(),
+        }),
       });
 
       const data = await res.json();
@@ -100,14 +116,14 @@ const LightEffectsManager = () => {
         audio.play();
       }
     } catch (error) {
-      console.error('Error:', error);
+      console.error("Error:", error);
     }
   };
 
   const stopMusic = async () => {
     audio.pause();
     audio.currentTime = 0; // Ensure the audio starts from the beginning
-  }
+  };
 
   const createChannelsForGroup = () => {
     console.log(globalGroup);
@@ -116,7 +132,7 @@ const LightEffectsManager = () => {
         const newChannel = {
           index: channels.length + index,
           transitions: [],
-          lightName: light.name
+          lightName: light.name,
         };
         setChannels((prevChannels) => [...prevChannels, newChannel]);
       });
@@ -126,6 +142,25 @@ const LightEffectsManager = () => {
   return (
     <div className="effects-manager">
       <h2>Light Effects Manager</h2>
+      <div className="controls">
+        <label>
+          BPM:
+          <input
+            type="number"
+            value={bpm}
+            onChange={(e) => setBpm(Number(e.target.value))}
+          />
+        </label>
+        <label>
+          Duration (ms):
+          <input
+            type="number"
+            value={duration}
+            onChange={(e) => setDuration(Number(e.target.value))}
+          />
+        </label>
+        <p>Interval: {interval.toFixed(2)} ms</p>
+      </div>
       <button onClick={addChannel} className="add-channel-button">
         Add Channel
       </button>
@@ -138,7 +173,9 @@ const LightEffectsManager = () => {
         {channels.map((channel) => (
           <div
             key={channel.index}
-            className={`channel-card ${currentChannelIndex === channel.index ? "active" : ""}`}
+            className={`channel-card ${
+              currentChannelIndex === channel.index ? "active" : ""
+            }`}
             onClick={() => setCurrentChannelIndex(channel.index)}
           >
             <h3>Channel {channel.index}</h3>
