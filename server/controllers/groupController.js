@@ -4,9 +4,10 @@ const Bridge = require('../models/Bridge');
 const axios = require('axios');
 
 const utilities = require('../services/utilities');
-
+const isTesting = true;
 exports.list = getGroups;
 exports.sync = syncGroups;
+exports.lights = groupLights;
 
 async function getGroups(bridgeId) {
   const groups = Group.where('bridgeId', bridgeId);
@@ -32,4 +33,29 @@ async function syncGroups(bridgeId) {
   });
 
   return Group.updateOrCreate(groups, 'apiId');
+}
+
+async function groupLights(groupId) {
+  const group = Group.find(groupId);
+  let lights = null;
+  if (!isTesting) {
+    lights = await group.getLightStatuses();
+  } else {
+    lights = group.lightApiIds.map((light, index) => {
+      return {
+        name: "light: " + index,
+        index,
+        color: {
+          xy: {
+            x: 0.1,
+            y: 0.1
+          },
+        },
+        dimming: {
+          brightness: 50.5
+        }
+      }
+    });
+  }
+  return lights;
 }

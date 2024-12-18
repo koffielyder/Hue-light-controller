@@ -8,5 +8,6 @@ const groupController = require('../controllers/groupController');
 // Define bridge routes
 router.get('/', groupController.list, eRouter);
 router.get('/sync', groupController.sync, eRouter);
+router.get('/:groupId/lights', groupController.lights, eRouter);
 
 module.exports = eRouter;

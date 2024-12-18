@@ -1,15 +1,14 @@
-import React, { createContext, useState, useContext } from 'react';
+import React, { createContext, useState } from "react";
 
-const BridgeContext = createContext();
+export const BridgeContext = createContext();
 
 export const BridgeProvider = ({ children }) => {
-  const [selectedBridge, setSelectedBridge] = useState(null);
+  const [globalGroup, setGlobalGroup] = useState(null);
+  const [globalBridge, setGlobalBridge] = useState(null);
 
   return (
-    <BridgeContext.Provider value={{ selectedBridge, setSelectedBridge }}>
+    <BridgeContext.Provider value={{ globalGroup, setGlobalGroup, globalBridge, setGlobalBridge }}>
       {children}
     </BridgeContext.Provider>
   );
 };
-
-export const useBridge = () => useContext(BridgeContext);

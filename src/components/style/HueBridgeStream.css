@@ -1,0 +1,55 @@
+
+  /* General Styles */
+.hue-bridge-stream-horizontal {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.group-select-container {
+  display: flex;
+  flex-direction: column;
+}
+
+.lights-label {
+  position: relative;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+.lights-popup {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  background: black;
+  border: 1px solid #ccc;
+  padding: 4px;
+  border-radius: 5px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+  z-index: 100;
+}
+
+.lights-popup ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.lights-popup li {
+  font-size: 8px;
+}
+
+.stream-button {
+  padding: 5px 15px;
+  border: none;
+  border-radius: 5px;
+  background-color: #007bff;
+  color: white;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.stream-button:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+}

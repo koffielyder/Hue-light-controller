@@ -13,6 +13,7 @@ class HueStream {
   effectQueue = [];
   lastLightState = null;
   idleEffect = null;
+  isTesting = false;
 
   constructor() {
     if (HueStream.instance) return HueStream.instance
@@ -35,21 +36,21 @@ class HueStream {
           effect: this.lights.map(light => [{
             start: 0, end: 100, colors: [["start", "start", "start"]], formula: 't' // green
           },
-            {
-              start: 100, end: 300, colors: [["start", "start", 100]], formula: 't' // red
-            },
-            {
-              start: 300, end: 500, colors: [["start", "start", "start"]], formula: 't' // green
-            },
-            {
-              start: 500, end: 700, colors: [["start", "start", 100]], formula: 't' // red
-            },
-            {
-              start: 700, end: 900, colors: [["start", "start", "start"]], formula: 't' // green
-            },]),
+          {
+            start: 100, end: 300, colors: [["start", "start", 100]], formula: 't' // red
+          },
+          {
+            start: 300, end: 500, colors: [["start", "start", "start"]], formula: 't' // green
+          },
+          {
+            start: 500, end: 700, colors: [["start", "start", 100]], formula: 't' // red
+          },
+          {
+            start: 700, end: 900, colors: [["start", "start", "start"]], formula: 't' // green
+          },]),
         });
         this.idleEffect.parseEffect();
-      } catch(err) {
+      } catch (err) {
         console.log(err)
         throw err;
       }
@@ -60,7 +61,24 @@ class HueStream {
 
 
   async syncLights() {
-    const lights = await this.group.getLightStatuses();
+    let lights = null;
+    if (!this.isTesting) {
+      lights = await this.group.getLightStatuses();
+    } else {
+      lights = this.group.lightApiIds.map(light => {
+        return {
+          color: {
+            xy: {
+              x: 0.1,
+              y: 0.1
+            },
+          },
+          dimming: {
+            brightness: 50.5
+          }
+        }
+      });
+    }
     this.lights = lights.map(
       lightData => [lightData.color.xy.x, lightData.color.xy.y, Math.round(lightData.dimming.brightness * 2.55)]
     );
@@ -94,12 +112,12 @@ class HueStream {
       }
       try {
         const message = utilities.buildStreamMessage(this.group.apiId, effect.parsedEffect[i]);
-        this.socket.send(message,
+        if (!this.isTesting) this.socket.send(message,
           (error) => {
             if (error) console.error('❌ Failed to send UDP stream:', error);
             // else console.log(`📡 Stream message sent`);
           });
-      } catch(err) {
+      } catch (err) {
         console.error('Failed to build message')
         console.log(err)
       }
@@ -128,13 +146,29 @@ class HueStream {
   }
 
   async addToQueue(effect) {
-    if (!(effect instanceof Effect)) effect = new Effect( {
+    if (!(effect instanceof Effect)) effect = new Effect({
       ...effect, startLightState: this.lastLightState,
     });
     if (!effect.parsedEffect) await effect.parseEffect();
     this.effectQueue.push(effect);
     this.lastLightState = effect.endLightState;
     return effect;
+  }
+
+
+  async closeSocket() {
+    this.isStreaming = false;
+    if(this.isTesting) return true;
+    if (this.socket) {
+      try {
+        await this.socket.close();
+      } catch (err) {
+        if (err.code !== "ERR_SOCKET_DGRAM_NOT_RUNNING") throw err;
+      }
+    }
+    this.socket = null;
+    await this.group.deactivateStreaming();
+    return true;
   }
 }
 

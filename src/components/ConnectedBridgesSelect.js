@@ -1,19 +1,20 @@
-import React, { useState, useEffect } from 'react';
-import { useBridge } from '../context/BridgeContext';
+import React, { useState, useEffect, useContext } from 'react';
+import { BridgeContext } from '../context/BridgeContext';
 import DiscoverBridgesModal from './DiscoverBridgesModal';
 import BridgeStatus from './BridgeStatus';
+import HueBridgeStream from './HueBridgeStream';
 import './style/ConnectedBridgesSelect.css';
 
 const ConnectedBridgesSelect = () => {
   const [connectedBridges, setConnectedBridges] = useState([]);
   const [discoveredBridges, setDiscoveredBridges] = useState([]);
   const [showPopup, setShowPopup] = useState(false);
-  const { selectedBridge, setSelectedBridge } = useBridge();
+  const { globalBridge, setGlobalBridge } = useContext(BridgeContext);
 
   useEffect(() => {
     const fetchConnectedBridges = async () => {
       try {
-        const response = await fetch('http://localhost:5000/api/bridges');
+        const response = await fetch('/api/bridges');
         const data = await response.json();
         setConnectedBridges(data);
       } catch (error) {
@@ -34,6 +35,10 @@ const ConnectedBridgesSelect = () => {
     }
   };
 
+  const getBridgeById = (id) => {
+    return connectedBridges.filter(bridge => bridge.id == id)[0];
+  }
+
   return (
     <>
       <div className="top-menu">
@@ -41,8 +46,8 @@ const ConnectedBridgesSelect = () => {
           + Bridge
         </button>
         <select
-          value={selectedBridge || ''}
-          onChange={(e) => setSelectedBridge(e.target.value)}
+          value={globalBridge || ''}
+          onChange={(e) => setGlobalBridge(getBridgeById(e.target.value))}
           className="select-bridge"
         >
           <option value="" disabled>
@@ -54,13 +59,14 @@ const ConnectedBridgesSelect = () => {
             </option>
           ))}
         </select>
-        {selectedBridge && <BridgeStatus bridgeId={selectedBridge} />}
+        {globalBridge && <BridgeStatus bridgeId={globalBridge} />}
+        <HueBridgeStream />
       </div>
 
       {showPopup && (
         <DiscoverBridgesModal
           bridges={discoveredBridges}
-          onConnect={(id) => setSelectedBridge(id)}
+          onConnect={(id) => setGlobalBridge(id)}
           onClose={() => setShowPopup(false)}
         />
       )}

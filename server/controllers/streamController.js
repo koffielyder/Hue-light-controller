@@ -8,23 +8,35 @@ const {
   dtls
 } = require("node-dtls-client");
 
+const testing = true;
+
 // connect
 exports.connect = connectSocket;
+exports.disconnect = disconnectSocket;
 
 // addQueue
 exports.addQueue = addToQueue;
 
 exports.addQueueTest = addToQueueTest;
+
 // playNext
 exports.playNext = playNextEffect;
 
+exports.status = getStatus;
+
+
 async function connectSocket(groupId) {
   const group = Group.find(groupId, true);
-  await group.activateStreaming();
-  hueStream.setGroup(group)
+  if(!testing) await group.activateStreaming();
+  hueStream.isTesting = testing;
+  hueStream.setGroup(group);
   await hueStream.syncLights();
   hueStream.setSocket(await openSocket(socketOptions(group)));
   return true;
+}
+
+async function disconnectSocket() {
+  return await hueStream.closeSocket();
 }
 
 async function addToQueue(lightData) {
@@ -61,6 +73,11 @@ async function playNextEffect() {
   return true;
 }
 
+async function getStatus() {
+  return hueStream.isStreaming;
+}
+
+
 function socketOptions(group) {
   return {
     type: "udp4",
@@ -81,6 +98,7 @@ function socketOptions(group) {
 
 
 async function openSocket(options, retryIndex = 0, maxRetry = 3) {
+  if(testing) return true;
   if (retryIndex >= maxRetry) throw new Error(`Failed opening socket after ${retryIndex++} tries`, 569)
   const socket = dtls.createSocket(options);
 
@@ -99,7 +117,7 @@ async function openSocket(options, retryIndex = 0, maxRetry = 3) {
 
         return resolve(openSocket(options, retryIndex));
       } else {
-        closeSocket(socket);
+        hueStream.closeSocket();
         throw e;
       }
     })
@@ -121,7 +139,7 @@ function closeStreamOnExit(socket) {
     console.log("\nCaught interrupt signal (Ctrl + C). Closing stream...");
     try {
       hueStream.removeActiveEffect();
-      closeSocket(socket).then(response => {
+      hueStream.closeSocket().then(response => {
         process.exit(0);
       }); // Gracefully close the DTLS stream
     } catch (error) {
@@ -136,7 +154,7 @@ function closeStreamOnExit(socket) {
   process.on('SIGTERM', () => {
     console.log("\nCaught SIGTERM. Closing stream...");
     try {
-      closeSocket(socket).then(response => {
+      hueStream.closeSocket().then(response => {
         process.exit(0);
       }); // Gracefully close the DTLS stream
     } catch (error) {
@@ -145,17 +163,4 @@ function closeStreamOnExit(socket) {
         1000); // Give it time to close before forcing exit
     }
   });
-}
-
-async function closeSocket(socket) {
-  if (socket) {
-    try {
-      await socket.close();
-    } catch(err) {
-      if (err.code !== "ERR_SOCKET_DGRAM_NOT_RUNNING") throw err;
-    }
-  }
-
-  await hueStream.group.deactivateStreaming();
-  return true;
 }
