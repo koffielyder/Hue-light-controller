@@ -1,0 +1,6 @@
+#color-wheel {
+    aspect-ratio: 1/1;
+    background: radial-gradient(white, transparent 80%),
+                conic-gradient(#e43f00, #fae410, #55cc3b, #09adff, #6b0efd, #e70d86, #e43f00);
+    border-radius: 50%;
+}

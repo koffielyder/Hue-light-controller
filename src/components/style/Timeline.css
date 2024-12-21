@@ -1,0 +1,79 @@
+/* Timeline container */
+.timeline {
+    position: relative;
+    width: 100%;
+    border: 1px solid #ccc;
+    padding: 10px;
+    background-color: #f9f9f9;
+    overflow-x: auto;
+  }
+  
+  /* Controls container */
+  .controls {
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  
+  /* Channel container */
+  .channel {
+    position: relative;
+    height: 50px;
+    margin-bottom: 20px;
+    border: 1px solid #ddd;
+    background-color: #fff;
+    cursor: pointer;
+    overflow: hidden;
+  }
+  
+  /* Note line */
+  .note-line {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 1px;
+    background-color: #aaa;
+    display: flex;
+  }
+  
+  /* Note label */
+  .note-label {
+    font-size: 8px;
+    text-align: center;
+    color: #555;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 3px;
+  }
+  
+  /* Channel item */
+  .channel-item {
+    position: absolute;
+    top: 10%;
+    bottom: 10%;
+    width: 10px;
+    background-color: #007bff;
+    border-radius: 2px;
+    cursor: grab;
+  }
+  
+  /* Remove channel button */
+  .remove-channel {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    padding: 2px 5px;
+    background-color: #ff4d4d;
+    color: #fff;
+    border: none;
+    border-radius: 3px;
+    font-size: 10px;
+    cursor: pointer;
+  }
+  
+  .remove-channel:hover {
+    background-color: #e60000;
+  }
+  

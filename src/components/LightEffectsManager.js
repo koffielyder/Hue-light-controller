@@ -1,211 +1,159 @@
 import React, { useState, useEffect, useContext } from "react";
+import { DataSet, Timeline } from "vis-timeline/standalone";
 import AddTransitionForm from "./AddTransitionForm";
 import TransitionsList from "./TransitionsList";
 import { BridgeContext } from "../context/BridgeContext";
 import "./style/LightEffectsManager.css";
-import { hexToXyb } from "../utils/colorUtils";
+import "vis-timeline/styles/vis-timeline-graph2d.min.css";
 
 const LightEffectsManager = () => {
   const [channels, setChannels] = useState([]);
   const [currentChannelIndex, setCurrentChannelIndex] = useState(null);
   const { globalGroup } = useContext(BridgeContext);
-  const [audio, setAudio] = useState(null);
-  const [bpm, setBpm] = useState(120); // Default BPM
-  const [duration, setDuration] = useState(2000); // Default duration in ms
-  const [interval, setInterval] = useState(500); // Default interval in ms
+  const [timeline, setTimeline] = useState(null);
+  const [items, setItems] = useState(new DataSet([]));
+  const [groups, setGroups] = useState(new DataSet([]));
+  const [effectDuration, setEffectDuration] = useState(10000); // Default duration in ms
 
-  // Calculate interval whenever BPM changes
   useEffect(() => {
-    const calculatedInterval = calculateSmallestInterval(bpm);
-    setInterval(calculatedInterval);
-  }, [bpm]);
-
-  // Preload the audio when the component mounts
-  useEffect(() => {
-    const audioInstance = new Audio("/sounds/song.mp3");
-    audioInstance.preload = "auto";
-    setAudio(audioInstance);
-  }, []);
-
-  const calculateSmallestInterval = (bpm) => {
-    const beatDuration = 60000 / bpm; // Duration of one beat in milliseconds
-    const minInterval = 50; // Minimum allowed interval in milliseconds
-    let interval = beatDuration;
-  
-    while (interval > minInterval) {
-      interval /= 2; // Halve the interval to create smaller subdivisions
+    if (timeline) {
+      timeline.destroy();
     }
-    interval *= 2;
-  
-    return Math.max(interval, minInterval); // Ensure it does not go below the minimum
+
+    const container = document.getElementById("timeline");
+    const options = {
+      editable: true,
+      stack: true,
+      min: 0,
+      max: effectDuration,
+      zoomMin: 100,
+      zoomMax: effectDuration,
+      format: {
+        minorLabels: {
+          millisecond: "ms",
+          second: "s",
+        },
+        majorLabels: {
+          millisecond: "ms",
+          second: "s",
+        },
+      },
+      onAdd: (item, callback) => {
+        const color = prompt("Enter a color (hex code):", "#ffffff");
+        if (color) {
+          item.content = `<div style=\"background-color:${color};height:100%;\"></div>`;
+          item.color = color;
+          callback(item);
+          addItemToChannel(item);
+        } else {
+          callback(null);
+        }
+      },
+      onMove: (item, callback) => {
+        updateItemInChannel(item);
+        callback(item);
+      },
+      onRemove: (item, callback) => {
+        removeItemFromChannel(item);
+        callback(item);
+      },
+    };
+
+    const newTimeline = new Timeline(container, items, groups, options);
+    setTimeline(newTimeline);
+  }, [effectDuration]);
+
+  const addItemToChannel = (item) => {
+    setChannels((prevChannels) => {
+      const updatedChannels = [...prevChannels];
+      const channel = updatedChannels.find((ch) => ch.index === item.group);
+      if (channel) {
+        channel.transitions.push({
+          start: item.start,
+          end: item.end,
+          color: item.color,
+        });
+      }
+      return updatedChannels;
+    });
+  };
+
+  const updateItemInChannel = (item) => {
+    setChannels((prevChannels) => {
+      const updatedChannels = [...prevChannels];
+      const channel = updatedChannels.find((ch) => ch.index === item.group);
+      if (channel) {
+        const transition = channel.transitions.find((t) => t.id === item.id);
+        if (transition) {
+          transition.start = item.start;
+          transition.end = item.end;
+        }
+      }
+      return updatedChannels;
+    });
+  };
+
+  const removeItemFromChannel = (item) => {
+    setChannels((prevChannels) => {
+      const updatedChannels = [...prevChannels];
+      const channel = updatedChannels.find((ch) => ch.index === item.group);
+      if (channel) {
+        channel.transitions = channel.transitions.filter((t) => t.id !== item.id);
+      }
+      return updatedChannels;
+    });
   };
 
   const addChannel = () => {
-    const newChannel = {
-      index: channels.length,
-      transitions: [],
-    };
-    setChannels([...channels, newChannel]);
-  };
-
-  const updateTransitions = (channelIndex, updatedTransitions) => {
-    setChannels((prevChannels) =>
-      prevChannels.map((channel) =>
-        channel.index === channelIndex
-          ? { ...channel, transitions: updatedTransitions }
-          : channel
-      )
-    );
+    const newChannelIndex = channels.length;
+    setChannels((prev) => [
+      ...prev,
+      { index: newChannelIndex, transitions: [] },
+    ]);
+    groups.add({
+      id: newChannelIndex,
+      content: `Channel ${newChannelIndex}`,
+    });
   };
 
   const parseEffect = () => {
-    return {
-      duration,
-      interval,
-      repeat: true,
-      effect: channels.map((channel) =>
-        channel.transitions.map((trans) => {
-          return {
-            start: trans.start,
-            end: trans.end,
-            formula: trans.formula,
-            color: hexToXyb(trans.color),
-          };
-        })
-      ),
-    };
-  };
-
-  const addToQueue = async () => {
-    console.log(parseEffect());
-    return
-    try {
-      const res = await fetch("http://localhost:5000/api/stream/queue/add", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          lightData: parseEffect(),
-        }),
-      });
-
-      const data = await res.json();
-    } catch (error) {
-      console.error("Error:", error);
-    }
+    return channels.map((channel) => ({
+      group: channel.index,
+      transitions: channel.transitions,
+    }));
   };
 
   const sendLightData = async () => {
     try {
-      const res = await fetch("http://localhost:5000/api/stream/play", {
+      const effectData = parseEffect();
+      await fetch("http://localhost:5000/api/stream/play", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          lightData: parseEffect(),
+          lightData: effectData,
         }),
       });
-
-      const data = await res.json();
-
-      // Play preloaded audio after successful response
-      if (res.ok && audio) {
-        audio.currentTime = 0; // Ensure the audio starts from the beginning
-        audio.play();
-      }
     } catch (error) {
-      console.error("Error:", error);
-    }
-  };
-
-  const stopMusic = async () => {
-    audio.pause();
-    audio.currentTime = 0; // Ensure the audio starts from the beginning
-  };
-
-  const createChannelsForGroup = () => {
-    console.log(globalGroup);
-    if (globalGroup && globalGroup.lights) {
-      globalGroup.lights.forEach((light, index) => {
-        const newChannel = {
-          index: channels.length + index,
-          transitions: [],
-          lightName: light.name,
-        };
-        setChannels((prevChannels) => [...prevChannels, newChannel]);
-      });
+      console.error("Error sending light data:", error);
     }
   };
 
   return (
     <div className="effects-manager">
       <h2>Light Effects Manager</h2>
-      <div className="controls">
-        <label>
-          BPM:
-          <input
-            type="number"
-            value={bpm}
-            onChange={(e) => setBpm(Number(e.target.value))}
-          />
-        </label>
-        <label>
-          Duration (ms):
-          <input
-            type="number"
-            value={duration}
-            onChange={(e) => setDuration(Number(e.target.value))}
-          />
-        </label>
-        <p>Interval: {interval.toFixed(2)} ms</p>
-      </div>
-      <button onClick={addChannel} className="add-channel-button">
-        Add Channel
-      </button>
-
-      <button onClick={createChannelsForGroup} className="add-channel-button">
-        Create Channels for Selected Group
-      </button>
-
-      <div className="channels-list">
-        {channels.map((channel) => (
-          <div
-            key={channel.index}
-            className={`channel-card ${
-              currentChannelIndex === channel.index ? "active" : ""
-            }`}
-            onClick={() => setCurrentChannelIndex(channel.index)}
-          >
-            <h3>Channel {channel.index}</h3>
-            <p>Transitions: {channel.transitions.length}</p>
-          </div>
-        ))}
-      </div>
-
-      {currentChannelIndex !== null && (
-        <>
-          <AddTransitionForm
-            transitions={channels[currentChannelIndex].transitions}
-            onUpdate={(updated) => updateTransitions(currentChannelIndex, updated)}
-          />
-          <TransitionsList
-            transitions={channels[currentChannelIndex].transitions}
-            onUpdate={(updated) => updateTransitions(currentChannelIndex, updated)}
-          />
-        </>
-      )}
-
-      <button onClick={addToQueue} className="add-channel-button">
-        Add to queue
-      </button>
-      <button onClick={sendLightData} className="add-channel-button">
-        Play now
-      </button>
-      <button onClick={stopMusic} className="add-channel-button">
-        Stop music
-      </button>
+      <label>
+        Effect Duration (ms):
+        <input
+          type="number"
+          value={effectDuration}
+          onChange={(e) => setEffectDuration(Number(e.target.value))}
+        />
+      </label>
+      <button onClick={addChannel}>Add Channel</button>
+      <div id="timeline" style={{ height: "400px" }}></div>
+      <button onClick={sendLightData}>Play Effects</button>
     </div>
   );
 };

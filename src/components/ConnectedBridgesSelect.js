@@ -60,7 +60,7 @@ const ConnectedBridgesSelect = () => {
           ))}
         </select>
         {globalBridge && <BridgeStatus bridgeId={globalBridge} />}
-        <HueBridgeStream />
+        {globalBridge && <HueBridgeStream />}
       </div>
 
       {showPopup && (
