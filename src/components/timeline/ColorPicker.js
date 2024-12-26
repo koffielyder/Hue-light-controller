@@ -2,22 +2,46 @@ import { useContext, useEffect, useRef, useState } from "react";
 import "../style/ColorPicker.css";
 import iro from "@jaames/iro";
 import { TimelineContext } from '../../context/TimelineContext';
+import ColorButton from "./ColorButton";
+import { hsvToHex } from "../../utils/colorUtils";
 
-const ColorPicker = ({ currentValue = "#fff", onChange = (color) => { } }) => {
+const ColorPicker = ({ color = "#fff", onChange = (color) => { } }) => {
     const colorPickerRef = useRef(null);
     const colorPickerInstance = useRef(null);
     const [showColorPicker, setShowColorPicker] = useState(false);
-      const { defaultColors, setDefaultColors } = useContext(TimelineContext);
-    
+    const [colorPickerPos, setColorPickerPos] = useState([0, 0]);
+
+    const toggleColorPicker = (color, e) => {
+        setColorPickerPos([e.clientX, e.clientY]);
+        setShowColorPicker(!showColorPicker);
+    }
+
+    const handleColorClick = (color) => {
+        onChange({color})
+    }
 
     useEffect(() => {
         if (showColorPicker && colorPickerRef.current) {
             colorPickerInstance.current = iro.ColorPicker(colorPickerRef.current, {
                 width: 200,
-                color: currentValue,
+                color: color,
+                wheelLightness: false,
             });
 
-            colorPickerInstance.current.on("color:change", onChange);
+            colorPickerInstance.current.on("color:change", (colorData) => {
+                const value = {
+                    color: hsvToHex(colorData.hsv.h, colorData.hsv.s),
+                    bri: colorData.value
+                }
+                onChange(value)
+            });
+
+            console.log({colorPickerPos})
+            console.log(colorPickerInstance.current)
+            colorPickerInstance.current.el.style.position = 'absolute';
+            colorPickerInstance.current.el.style.left = colorPickerPos[0] + 'px';
+            colorPickerInstance.current.el.style.top = colorPickerPos[1] + 'px';
+
         }
 
         return () => {
@@ -30,16 +54,11 @@ const ColorPicker = ({ currentValue = "#fff", onChange = (color) => { } }) => {
 
 
     return (
-        <div>
-            <div>
-                {defaultColors && defaultColors.map(color => (
-                    <button style={{ backgroundColor: color }} className="h-4 w-12 border" />
-                ))}
-            </div>
-            <button onClick={() => setShowColorPicker(true)}>Open picker</button>
+        <>
+            <ColorButton color={color} onClick={toggleColorPicker} />
             {showColorPicker && (
-                <div className="color-picker-popup">
-                    <div ref={colorPickerRef}></div>
+                <div onClick={() => setShowColorPicker(false)} className="z-30 fixed left-0 top-0 w-full h-full bg-black bg-opacity-40 flex justify-center align-middle">
+                    <div className="" ref={colorPickerRef}></div>
                     <button
                         onClick={() => setShowColorPicker(false)}
                         className="close-picker-button"
@@ -48,7 +67,7 @@ const ColorPicker = ({ currentValue = "#fff", onChange = (color) => { } }) => {
                     </button>
                 </div>
             )}
-        </div>
+        </>
     );
 };
 

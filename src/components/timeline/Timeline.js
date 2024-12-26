@@ -4,15 +4,15 @@ import { fasr, fasdt } from '@awesome.me/kit-aea0077342/icons'
 import Row from './Row';
 import Channel from './Channel';
 import { TimelineContext } from '../../context/TimelineContext';
+import ControlsBottom from "./ControlsBottom";
 
-const Timeline = ({ duration, interval, onDurationChange = () => { } }) => {
+const Timeline = ({ interval, onDurationChange = () => { } }) => {
   const [zoomLevel, setZoomLevel] = useState(1);
   const timelineRef = useRef(null);
-
-  const { channels, setChannels } = useContext(TimelineContext);
+  const { channels, setChannels, duration, setDuration, bpm, setBpm } = useContext(TimelineContext);
 
   const addChannel = () => {
-    setChannels((prev) => [...prev, { id: prev.length, items: [] }]);
+    setChannels((prev) => [...prev, { id: prev.length, transitions: [] }]);
   };
 
   const updateChannel = (data, id = null) => {
@@ -53,24 +53,36 @@ const Timeline = ({ duration, interval, onDurationChange = () => { } }) => {
       <div className="flex flex-col overflow-x-scroll gap-4 py-4">
         <Row header={
           <div className="controls">
+            <label>
+              Duration (ms):
+              <input
+                type="number"
+                value={duration}
+                onChange={(e) => setDuration(Number(e.target.value))}
+              />
+            </label>
+
+            <label>
+              Bpm:
+              <input
+                type="number"
+                value={bpm}
+                onChange={(e) => setBpm(Number(e.target.value))}
+              />
+            </label>
           </div>}
         />
         {channels.map((channel, channelIndex) => (
           <Channel
             key={channel.id}
             channel={channel}
-            interval={500}
+            interval={60000/bpm}
             duration={duration}
-            step={50}
             zoom={zoomLevel}
             onUpdateChanel={updateChannel}
           />
         ))}
-        <Row header={
-          <button className="flex bg-blue-400 flex-grow h-full w-full text-3xl justify-center items-center" onClick={addChannel}>
-            <FontAwesomeIcon icon={fasdt.faPlusLarge} />
-          </button>}
-        />
+        <ControlsBottom onAddChannelClick={addChannel} zoom={zoomLevel/10} />
       </div>
     </div>
   );

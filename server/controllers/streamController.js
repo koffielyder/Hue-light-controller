@@ -71,7 +71,7 @@ async function playNextEffect() {
 }
 
 async function playEffect(lightData) {
-  lightData.effect = parseLightData(lightData.effect)
+  // lightData.effect = parseLightData(lightData.effect)
   return await hueStream.playEffect(lightData)
 }
 

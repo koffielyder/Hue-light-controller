@@ -32,7 +32,6 @@ class Effect {
 
   parseEffect() {
     this.endLightState = [];
-    console.log(this.lightData);
     const lightsData = this.lightData.map((lightData, lightIndex) => {
       const parsed = this.parseLight(lightData, lightIndex);
       return parsed;

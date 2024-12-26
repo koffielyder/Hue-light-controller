@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Row from './Row';
 import { valueState } from '../../utils/valueState';
 import ColorPicker from './ColorPicker';
@@ -10,8 +10,10 @@ const Channel = ({ channel, interval, duration, minInterval = 50, zoom = 10, onU
     // const [isDrawing, setIsDrawing] = useState(false);
     const [drawingEl, setDrawingEl] = useState(false);
     // const [drawData, setDrawData] = useState({});
-    const drawData = valueState(useState({}));
+    const [drawData, drawDataSet] = useState({});
+    const [selectedTransitions, selectedTransitionsSet] = useState([]);
     const isDrawing = valueState(useState(false));
+    const channelRef = useRef(null);
     const lineBars = () => {
         const bars = [];
         const barDuration = (interval * 4);
@@ -73,7 +75,7 @@ const Channel = ({ channel, interval, duration, minInterval = 50, zoom = 10, onU
             e.stopPropagation();
             e.preventDefault();
             if (!isDrawing.value) {
-                startDrawing({start: Number(e.target.dataset.start), duration: Number(e.target.dataset.duration)}, e.target)
+                startDrawing({ start: Number(e.target.dataset.start), duration: Number(e.target.dataset.duration), change: 'end' })
             } else {
                 addTransition();
                 // Finalize drawing
@@ -82,21 +84,35 @@ const Channel = ({ channel, interval, duration, minInterval = 50, zoom = 10, onU
         }
     }
 
-    const startDrawing = (data, parent = null) => {
-        const newElement = document.createElement("div");
-        newElement.style.position = "absolute";
-        newElement.style.left = "0px";
-        newElement.style.top = "0px";
-        newElement.style.width = data.duration * (zoom / 10) + 'px';
-        newElement.style.height = "100%";
-        newElement.style.backgroundColor = "rgba(0, 123, 255, 0.2)";
-        newElement.style.transformOrigin = 'left'
-        console.log(data.index);
-        drawData.value = ({ start: data.start, orgDuration: data.duration, duration: data.duration, index: data.index })
-        if(!parent) parent = document.querySelectorAll(`[data-start='${data.start}']`)[0];
-        parent.appendChild(newElement)
-        setDrawingEl(newElement);
+    const startDrawing = (data) => {
+        if (!data.change) data.change = ['end'];
+        else if (!Array.isArray(data.change)) data.change = [data.change];
+        drawDataSet({ start: data.start, duration: data.duration, index: data.index, change: data.change })
+        createDrawElement();
         isDrawing.value = true;
+    }
+
+    const createDrawElement = () => {
+        const drawElement = document.createElement("div");
+
+        drawElement.style.position = "absolute";
+        drawElement.style.left = "0px";
+        drawElement.style.top = "0px";
+        drawElement.style.height = "100%";
+        drawElement.style.backgroundColor = "rgba(0, 123, 255, 0.2)";
+        drawElement.style.transformOrigin = 'left'
+        drawElement.style.pointerEvents = "none";
+        setDrawingEl(drawElement);
+        channelRef.current.appendChild(drawElement);
+        updateDrawElement();
+
+    }
+
+    const updateDrawElement = () => {
+        if (isDrawing.value && drawingEl) {
+            drawingEl.style.width = drawData.duration * (zoom / 10) + 'px';
+            drawingEl.style.left = drawData.start * (zoom / 10) + 'px';
+        }
     }
 
     const stopDrawing = () => {
@@ -107,37 +123,54 @@ const Channel = ({ channel, interval, duration, minInterval = 50, zoom = 10, onU
 
     const handleMouseOver = (e) => {
         if (isDrawing.value && drawingEl) {
-            let widthMult = 1;
             if (e.target.dataset.start !== undefined) {
-                const orgDuration = drawingEl.parentNode.dataset.duration;
-                const orgStart = Number(drawingEl.parentNode.dataset.start);
-                const start = Number(e.target.dataset.start);
-                const hoverDuration = Number(e.target.dataset.duration)
-                const diff = (start + hoverDuration) - (drawData.value.start + drawData.value.orgDuration);
-                widthMult = (diff / drawData.value.orgDuration) + 1;
+                const noteStart = Number(e.target.dataset.start);
+                const noteDuration = Number(e.target.dataset.duration);
+                const noteEnd = noteStart + noteDuration;
+                const drawEnd = drawData.start + drawData.duration;
+                const newDraw = {
+                    ...drawData,
+                    start: drawData.start,
+                    duration: drawData.duration,
+                }
+                // check if new start is lower than original (set start to new start)
+                if (drawData.change.includes('start') && noteStart < drawEnd) {
+                    newDraw.start = noteStart;
+                    newDraw.duration += (drawData.start - noteStart);
+                }
+                if (drawData.change.includes('end') && noteEnd > drawData.start) newDraw.duration = noteEnd - drawData.start;
+                drawDataSet(newDraw)
             }
-            drawData.value = ({ start: drawData.value.start, orgDuration: drawData.value.orgDuration, duration: drawData.value.orgDuration * widthMult, index: drawData.value.index })
-            drawingEl.style.transform = `scaleX(${widthMult})`;
         }
     };
 
     const addTransition = () => {
         const value = {
-            start: drawData.value.start,
-            duration: drawData.value.duration,
+            start: drawData.start,
+            duration: drawData.duration,
+            color: '#000',
+            bri: 100,
         };
-        if(drawData.value.index !== undefined) {
-            console.log("update");
-            channel.items[drawData.value.index] = value
+        if (drawData.index !== undefined) {
+            channel.transitions[drawData.index] = value
         } else {
-            console.log("create");
-            channel.items.push(value)
+            channel.transitions.push(value)
         }
         onUpdateChanel(channel)
     }
 
+    const updateTransition = (value, index) => {
+        const newVal = {
+            ...channel.transitions[index],
+            ...value
+        };
+        console.log({newVal})
+        channel.transitions[index] = newVal;
+        onUpdateChanel(channel)
+    }
+
     const drawTransition = (type, transitionIndex) => {
-        startDrawing({...channel.items[transitionIndex], index: transitionIndex})
+        startDrawing({ ...channel.transitions[transitionIndex], index: transitionIndex, change: type == 'start' ? 'end' : 'start' })
     }
 
     useEffect(() => {
@@ -158,15 +191,33 @@ const Channel = ({ channel, interval, duration, minInterval = 50, zoom = 10, onU
         };
     }, [isDrawing, drawingEl]);
 
+    useEffect(() => {
+        updateDrawElement();
+    }, [drawData, zoom])
+
     return (
         <Row
             header={
                 <p>Channel {channel.id}</p>}
         >
-            <div className='flex relative'>
+            <div className='flex relative' ref={channelRef}>
                 {lineBars()}
-                {channel.items.map((transition, index) => (
-                    <Transition key={index} transition={transition} zoom={zoom} isDrawing={isDrawing.value} onEditTime={(type) => { drawTransition(type, index) }} />
+                {channel.transitions.map((transition, index) => (
+                    <Transition
+                        selected={selectedTransitions.includes(index)}
+                        key={index} transition={transition}
+                        zoom={zoom}
+                        isDrawing={isDrawing.value}
+                        onEditTime={(type) => { drawTransition(type, index) }}
+                        onChange={(transition) => updateTransition(transition, index)}
+                        onClick={(e) => {
+                            const i = selectedTransitions.indexOf(index)
+                            if(i !== -1) {
+                                selectedTransitionsSet(selectedTransitions.filter(value => value !== index))
+                            }
+                            else selectedTransitionsSet([index])
+                        }}
+                    />
                 ))}
             </div>
         </Row>
